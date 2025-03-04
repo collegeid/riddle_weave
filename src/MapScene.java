@@ -148,27 +148,27 @@ public class MapScene {
         primaryStage.show();
     }
 
-    public void updateProvinceStatus(String cityName) {
-        ProvinceData provinceData = provinceDataMap.get(cityName);
-        if (provinceData != null && provinceData.isCompleted()) {
-            System.out.println(cityName + " telah diselesaikan!");
-    
-            // Cari marker provinsi dan ubah warnanya menjadi hijau
-            Pane root = (Pane) primaryStage.getScene().getRoot();
-            for (var child : root.getChildren()) {
-                if (child instanceof Circle) {
-                    Circle marker = (Circle) child;
-                    Text label = (Text) root.getChildren().stream()
-                            .filter(node -> node instanceof Text && ((Text) node).getText().equals(cityName))
-                            .findFirst()
-                            .orElse(null);
-    
-                    if (label != null && marker.getFill() == Color.RED) {
-                        marker.setFill(Color.GREEN);
-                        break;
-                    }
+   public void updateProvinceStatus(String cityName) {
+    ProvinceData provinceData = provinceDataMap.get(cityName);
+    if (provinceData != null && provinceData.isCompleted()) {
+        System.out.println(cityName + " telah diselesaikan!");
+
+        // Cari marker provinsi dan ubah warnanya menjadi hijau
+        Pane root = (Pane) primaryStage.getScene().getRoot();
+        for (var child : root.getChildren()) {
+            if (child instanceof Circle) {
+                Circle marker = (Circle) child;
+                Text label = (Text) root.getChildren().stream()
+                        .filter(node -> node instanceof Text && ((Text) node).getText().equals(cityName))
+                        .findFirst()
+                        .orElse(null);
+
+                if (label != null && marker.getFill() == Color.RED) {
+                    marker.setFill(Color.GREEN);
+                    break;
                 }
             }
         }
     }
+}
 }

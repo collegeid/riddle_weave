@@ -206,7 +206,7 @@ public class GameplayScene {
         delayTimeline.play();
     }
 
-    
+
     private String getCurrentQuestion() {
         ProvinceData provinceData = provinceDataMap.get(provinceName);
         return provinceData.getQuestion(currentQuestionIndex);
