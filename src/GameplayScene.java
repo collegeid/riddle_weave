@@ -16,6 +16,7 @@ import javafx.stage.Stage;
 import javafx.util.Duration;
 
 import java.io.File;
+import java.util.List;
 import java.util.Map;
 
 public class GameplayScene {
@@ -57,7 +58,7 @@ public class GameplayScene {
             background = new ImageView(new Image(new File("assets/images/gameplay.jpg").toURI().toString()));
         } catch (Exception e) {
             System.err.println("Gagal memuat gambar background. Menggunakan placeholder.");
-            background = new ImageView(new Image(getClass().getResourceAsStream("assets/images/gameplay.jpg")));
+            background = new ImageView(new Image(getClass().getResourceAsStream("assets/images/default_background.png")));
         }
         background.setFitWidth(800);
         background.setFitHeight(600);
@@ -67,7 +68,7 @@ public class GameplayScene {
             swiper = new ImageView(new Image(new File("assets/images/swiper.png").toURI().toString()));
         } catch (Exception e) {
             System.err.println("Gagal memuat gambar swiper. Menggunakan placeholder.");
-            swiper = new ImageView(new Image(getClass().getResourceAsStream("assets/images/swiper.png")));
+            swiper = new ImageView(new Image(getClass().getResourceAsStream("assets/images/default_swiper.png")));
         }
         swiper.setFitWidth(50);
         swiper.setFitHeight(50);
@@ -83,7 +84,7 @@ public class GameplayScene {
             cage = new ImageView(new Image(new File("assets/images/cage.png").toURI().toString()));
         } catch (Exception e) {
             System.err.println("Gagal memuat gambar cage. Menggunakan placeholder.");
-            cage = new ImageView(new Image(getClass().getResourceAsStream("assets/images/cage.png")));
+            cage = new ImageView(new Image(getClass().getResourceAsStream("assets/images/default_cage.png")));
         }
         cage.setFitWidth(100);
         cage.setFitHeight(100);
@@ -98,24 +99,18 @@ public class GameplayScene {
         questionLabel.setTranslateY(50);
 
         // Multiple choice buttons
-        Button optionA = new Button("A. Banda Aceh");
-        Button optionB = new Button("B. Medan");
-        Button optionC = new Button("C. Jakarta");
-        Button optionD = new Button("D. Surabaya");
-
-        optionA.setFont(honeyFont);
-        optionB.setFont(honeyFont);
-        optionC.setFont(honeyFont);
-        optionD.setFont(honeyFont);
-
-        optionA.setTranslateX(50);
-        optionA.setTranslateY(150);
-        optionB.setTranslateX(200);
-        optionB.setTranslateY(150);
-        optionC.setTranslateX(50);
-        optionC.setTranslateY(200);
-        optionD.setTranslateX(200);
-        optionD.setTranslateY(200);
+        List<String> options = getCurrentOptions();
+        Button[] optionButtons = new Button[options.size()];
+        for (int i = 0; i < options.size(); i++) {
+            String optionText = options.get(i);
+            Button optionButton = new Button(optionText);
+            optionButton.setFont(honeyFont);
+            optionButton.setTranslateX(50 + (i % 2) * 150); // 2 kolom
+            optionButton.setTranslateY(150 + (i / 2) * 50); // 2 baris
+            final String selectedOption = optionText; // Untuk lambda
+            optionButton.setOnAction(event -> handleAnswer(selectedOption));
+            optionButtons[i] = optionButton;
+        }
 
         // Timer visual (progress bar)
         Rectangle progressBar = new Rectangle(50, 550, 700, 20);
@@ -141,13 +136,10 @@ public class GameplayScene {
         timeline.play();
 
         // Root layout
-        Pane root = new Pane(background, swiper, house, cage, questionLabel, optionA, optionB, optionC, optionD, progressBar, progressIndicator);
-
-        // Event handling for answer submission
-        optionA.setOnAction(event -> handleAnswer(optionA.getText()));
-        optionB.setOnAction(event -> handleAnswer(optionB.getText()));
-        optionC.setOnAction(event -> handleAnswer(optionC.getText()));
-        optionD.setOnAction(event -> handleAnswer(optionD.getText()));
+        Pane root = new Pane(background, swiper, house, cage, questionLabel, progressBar, progressIndicator);
+        for (Button button : optionButtons) {
+            root.getChildren().add(button);
+        }
 
         return new Scene(root, 800, 600);
     }
@@ -156,11 +148,8 @@ public class GameplayScene {
         ProvinceData provinceData = provinceDataMap.get(provinceName);
         if (selectedAnswer.equals(getCorrectAnswer())) {
             provinceData.incrementCorrectAnswers();
-            playSound("menang.mp3");
-        } else {
-            playSound("kalah.mp3");
         }
-
+    
         currentQuestionIndex++;
         if (currentQuestionIndex < provinceData.getTotalQuestions()) {
             // Lanjutkan ke pertanyaan berikutnya
@@ -168,27 +157,36 @@ public class GameplayScene {
         } else {
             // Semua pertanyaan selesai
             if (provinceData.isCompleted()) {
-                primaryStage.setScene(new MapScene(primaryStage).createContent());
+                playSound("menang.mp3"); // Mainkan suara menang jika semua jawaban benar
+                showNotificationAndReturnToMap("Selamat! Anda telah menyelesaikan semua pertanyaan.", true);
+    
+                // Perbarui status provinsi di MapScene
+                MapScene mapScene = new MapScene(primaryStage);
+                mapScene.updateProvinceStatus(provinceName);
             } else {
+                playSound("kalah.mp3"); // Mainkan suara kalah jika ada jawaban salah
                 showNotificationAndReturnToMap("Sayang sekali! Anda belum menyelesaikan semua pertanyaan.", false);
             }
         }
     }
-
+    
     private void gameOver(boolean wrongAnswer) {
         if (isGameOver) return; // Jangan jalankan lagi jika game sudah over
-
+    
         boolean soundPlayed = playSound(wrongAnswer ? "kalah.mp3" : "kalah.mp3");
-
+    
         // Tampilkan pop-up jika audio gagal dimuat
         if (!soundPlayed) {
             Platform.runLater(() -> {
                 showAlert("Gagal memuat suara!", "Silakan cek file audio di folder assets.");
             });
         }
-
+    
         System.out.println(wrongAnswer ? "Jawaban salah!" : "Waktu habis!");
         showNotificationAndReturnToMap(wrongAnswer ? "Sayang sekali! Jawaban Anda salah." : "Waktu habis!", false);
+    
+        timeline.stop(); // Hentikan timer
+        isGameOver = true; // Set flag game over
     }
 
     private void showNotificationAndReturnToMap(String message, boolean isWin) {
@@ -199,14 +197,16 @@ public class GameplayScene {
             alert.setContentText(message);
             alert.showAndWait();
         });
-
+    
         // Delay sebelum beralih ke halaman map
         Timeline delayTimeline = new Timeline(new KeyFrame(Duration.seconds(2), event -> {
-            primaryStage.setScene(new MapScene(primaryStage).createContent());
+            MapScene mapScene = new MapScene(primaryStage);
+            mapScene.refreshAndShow(); // Muat ulang halaman peta dengan status terbaru
         }));
         delayTimeline.play();
     }
 
+    
     private String getCurrentQuestion() {
         ProvinceData provinceData = provinceDataMap.get(provinceName);
         return provinceData.getQuestion(currentQuestionIndex);
@@ -215,6 +215,11 @@ public class GameplayScene {
     private String getCorrectAnswer() {
         ProvinceData provinceData = provinceDataMap.get(provinceName);
         return provinceData.getCorrectAnswer(currentQuestionIndex);
+    }
+
+    private List<String> getCurrentOptions() {
+        ProvinceData provinceData = provinceDataMap.get(provinceName);
+        return provinceData.getOptions(currentQuestionIndex);
     }
 
     private void cageFallAnimation(ImageView cage, ImageView swiper) {
@@ -243,6 +248,8 @@ public class GameplayScene {
             return false; // Gagal memainkan audio
         }
     }
+
+
 
     private void showAlert(String title, String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR);

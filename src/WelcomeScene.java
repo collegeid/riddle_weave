@@ -23,7 +23,7 @@ public class WelcomeScene {
     private final Stage primaryStage;
     private static final String VIDEO_PATH = "assets/welcome.mp4";
     private static final String MODERATOR_IMAGE_PATH = "file:assets/images/mod.png";
-    private static final String FONT_PATH = "assets/fonts/honey.otf";
+    private static final String FONT_PATH = "assets/fonts/Honey.otf";
     private static final Color SPEECH_BUBBLE_COLOR = Color.web("#42A5F5");
 
     public WelcomeScene(Stage stage) {
